@@ -1,3 +1,6 @@
+// kode asal dari
+//  https://www.anakkendali.com/esp8266-esp32-mengakses-ntp-server-dan-api-jadwal-waktu-sholat-jws/
+// disesuaikan setelah ada perubahan API sumber
 #include <NTPClient.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -10,11 +13,12 @@
 // WiFiClient client;
 const char *ssid = "ASUS";
 const char *password = "air46664";
-const int httpsPort = 443;  //HTTPS= 443 and HTTP = 80
+const int httpsPort = 443; // HTTPS= 443 and HTTP = 80
 const long utcOffsetInSeconds = 25200;
-char daysOfTheWeek[7][12] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+// char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+const String daysOfTheWeek[7] = {"minggu", "senin", "selasa", "rabu", "kamis", "jum'at", "sabtu"};
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "asia.pool.ntp.org", utcOffsetInSeconds);
+NTPClient timeClient(ntpUDP, "time.apple.com", utcOffsetInSeconds);
 #define tahun timeClient.getYear()
 #define bulan timeClient.getMonth()
 #define tanggal timeClient.getDate()
@@ -22,15 +26,16 @@ NTPClient timeClient(ntpUDP, "asia.pool.ntp.org", utcOffsetInSeconds);
 #define jam timeClient.getHours()
 #define menit timeClient.getMinutes()
 #define detik timeClient.getSeconds()
-const uint8_t fp[20] = { 0x38, 0x9E, 0x04, 0xD4, 0x3F, 0x2D, 0x2E, 0xEA, 0xDE, 0x98, 0x6B, 0x9C, 0x78, 0x61, 0x4B, 0xB5, 0xE2, 0x34, 0x80, 0xD8 };
+const uint8_t fp[20] = {0x38, 0x9E, 0x04, 0xD4, 0x3F, 0x2D, 0x2E, 0xEA, 0xDE, 0x98, 0x6B, 0x9C, 0x78, 0x61, 0x4B, 0xB5, 0xE2, 0x34, 0x80, 0xD8};
 char tanggalapi[11];
 
-
-void setup() {
+void setup()
+{
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
@@ -38,18 +43,33 @@ void setup() {
   getjadwal();
 }
 
-void getjadwal() {
+void getjadwal()
+{
   timeClient.update();
   Serial.print(daysOfTheWeek[timeClient.getDay()]);
   Serial.print(", ");
+  String tanggalapi2;
+  tanggalapi2 += String(tahun);
+  // tanggalapi2 += "/";
+  tanggalapi2 += (bulan < 9) ? "/0" + String(bulan) : "/" + String(bulan);
+  tanggalapi2 += (tanggal < 9) ? "/0" + String(tanggal) : "/" + String(tanggal);
 
-  if (bulan >= 10 && tanggal >= 10) {
+  Serial.print(tanggalapi2);
+  Serial.print("\t");
+  if (bulan >= 10 && tanggal >= 10)
+  {
     sprintf(tanggalapi, "%d/%d/%d", tahun, bulan, tanggal);
-  } else if (bulan >= 10 && tanggal < 10) {
+  }
+  else if (bulan >= 10 && tanggal < 10)
+  {
     sprintf(tanggalapi, "%d/%d/0%d", tahun, bulan, tanggal);
-  } else if (bulan < 10 && tanggal >= 10) {
+  }
+  else if (bulan < 10 && tanggal >= 10)
+  {
     sprintf(tanggalapi, "%d/0%d/%d", tahun, bulan, tanggal);
-  } else if (bulan < 10 && tanggal < 10) {
+  }
+  else if (bulan < 10 && tanggal < 10)
+  {
     sprintf(tanggalapi, "%d/0%d/0%d", tahun, bulan, tanggal);
   }
   Serial.print(tanggalapi);
@@ -66,17 +86,21 @@ void getjadwal() {
   reqjadwal();
 }
 unsigned long lasttime = 0;
-void loop() {
+void loop()
+{
   // put your main code here, to run repeatedly:
 }
-void reqjadwal() {
+void reqjadwal()
+{
 
   StaticJsonDocument<1024> doc;
+  // 1225 id kota depok
+  // untuk mendapatkan id kota kamu, silahkan kunjungi https://api.myquran.com/v1/sholat/kota/semua -> CTRL+F untuk mencari
   String url = "https://api.myquran.com/v1/sholat/jadwal/1225/";
   url += tanggalapi;
   WiFiClientSecure httpsClient;
   httpsClient.setFingerprint(fp);
-  httpsClient.setTimeout(15000);  // 15 Seconds
+  httpsClient.setTimeout(15000); // 15 Seconds
   HTTPClient http;
   httpsClient.connect(url, httpsPort);
   http.begin(httpsClient, url);
@@ -86,7 +110,6 @@ void reqjadwal() {
 
   Serial.println("payload: ");
   Serial.println(payload);
-
 
   DeserializationError error = deserializeJson(doc, payload);
   JsonObject results = doc["data"]["jadwal"];
@@ -110,7 +133,8 @@ void reqjadwal() {
   Serial.println(subuh);
   Serial.println();
 
-  if (error) {
+  if (error)
+  {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.c_str());
     // return;
@@ -127,7 +151,6 @@ void reqjadwal() {
   // } else {
   //   Serial.println("certificate doesn't match");
   // }
-
 
   // Serial.print("HTTPS Connecting");
   // int r = 0;  //retry counter
