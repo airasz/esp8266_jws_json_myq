@@ -9,10 +9,9 @@
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
 #include <ArduinoJson.h>
+#include "credential.h" //wifi name n pass
 
 // WiFiClient client;
-const char *ssid = "ASUS";
-const char *password = "air46664";
 const int httpsPort = 443; // HTTPS= 443 and HTTP = 80
 const long utcOffsetInSeconds = 25200;
 // char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
